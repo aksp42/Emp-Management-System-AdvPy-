@@ -1,4 +1,4 @@
-#💼 Employee Management System
+💼 Employee Management System
 An Advanced Python-Based Console Project by Akanksha Singh
 
 A modern, interactive, and extensible console-based Employee Management System, built entirely as a solo project by Akanksha Singh, a student of B.Tech CSE - Data Science.

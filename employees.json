@@ -3,28 +3,28 @@
         "shiv333": {
             "Employee_id": "shiv333",
             "Name": "Shivansh Singh",
-            "Department": "Director",
+            "Department": "IT",
             "Type": "Full Time",
-            "Monthly_salary": 400000.0
+            "Monthly_salary": 89000.0
         }
     },
     "Medimemo": {
         "adi777": {
             "Employee_id": "adi777",
-            "Name": "Aditya Scahan",
-            "Department": "Cardio",
+            "Name": "Aditya Sachan",
+            "Department": "R&D",
             "Type": "Full Time",
-            "Monthly_salary": 328910.0
+            "Monthly_salary": 120000.0
         }
     },
-    "Medimeo": {
+    "Docgenie": {
         "h83u": {
-            "Employee_id": "h83u",
-            "Name": "aksjd",
-            "Department": "it",
+            "Employee_id": "",
+            "Name": "Riya Thapar",
+            "Department": "HR",
             "Type": "Part Time",
             "Hourly_rate": 874.0,
-            "Hours_worked_per_month": 98.0
+            "Hours_worked_per_month": 100.0
         }
     }
 }

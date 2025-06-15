@@ -57,6 +57,7 @@ json
   }
 }
 
+
 🔹 Why this structure?
 Instead of flatly saving all employee data, the JSON is organized company-wise, just like in real-world SaaS models. This approach offers:
 

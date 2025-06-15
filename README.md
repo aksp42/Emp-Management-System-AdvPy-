@@ -31,9 +31,8 @@ Technology / Concept	Description
 
 🧪 JSON Structure Example
 json
-Copy
-Edit
-{
+
+{ 
   "NeoEdge Analytics": {
     "EMP001": {
       "Name": "Ravi Kumar",
@@ -51,6 +50,7 @@ Edit
     }
   }
 }
+
 🔹 Why this structure?
 Instead of flatly saving all employee data, the JSON is organized company-wise, just like in real-world SaaS models. This approach offers:
 

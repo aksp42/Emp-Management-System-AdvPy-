@@ -32,7 +32,13 @@ Technology / Concept	Description
 🧪 JSON Structure Example
 json
 
-{ 
+
+---
+
+## 🧪 Sample JSON Structure
+
+```json
+{
   "NeoEdge Analytics": {
     "EMP001": {
       "Name": "Ravi Kumar",

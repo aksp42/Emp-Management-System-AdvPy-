@@ -1,10 +1,10 @@
-from abc import ABC , abstractmethod
+from abc import ABC, abstractmethod
 import json
 from datetime import datetime
+import os
 
-company_name = ""
 class Employee(ABC):
-    def __init__(self,employee_id:str , name: str,department: str):
+    def __init__(self, employee_id: str, name: str, department: str):
         self._employee_id = employee_id
         self._name = name
         self._department = department
@@ -37,8 +37,8 @@ class Employee(ABC):
         }
 
 class FullTimeEmployee(Employee):
-    def __init__(self,employee_id:str , name: str,department: str , monthly_salary: float):
-        super().__init__(employee_id,name,department)
+    def __init__(self, employee_id: str, name: str, department: str, monthly_salary: float):
+        super().__init__(employee_id, name, department)
         self.monthly_salary = monthly_salary
 
     @property
@@ -49,23 +49,23 @@ class FullTimeEmployee(Employee):
     def monthly_salary(self, value):
         if value >= 0:
             self._monthly_salary = value
-        else: raise ValueError("Salary cannot be negative.")
+        else:
+            raise ValueError("Salary cannot be negative.")
 
     def calculate_salary(self) -> float:
         return self._monthly_salary
 
     def display_details(self) -> str:
-        basic = super().display_details()
-        return f"{basic} , Monthly Salary: {self._monthly_salary}"
+        return super().display_details() + f", Monthly Salary: ₹{self._monthly_salary}"
 
     def to_dict(self) -> dict:
         base = super().to_dict()
-        base.update({"Monthly_salary": self.monthly_salary , "Type": "Full Time" })
+        base.update({"Monthly_salary": self.monthly_salary, "Type": "Full Time"})
         return base
 
 class PartTimeEmployee(Employee):
-    def __init__(self,employee_id:str , name: str,department: str , hourly_rate: float,hours_worked_per_month):
-        super().__init__(employee_id,name,department)
+    def __init__(self, employee_id: str, name: str, department: str, hourly_rate: float, hours_worked_per_month):
+        super().__init__(employee_id, name, department)
         self.hourly_rate = hourly_rate
         self.hours_worked_per_month = hours_worked_per_month
 
@@ -89,14 +89,13 @@ class PartTimeEmployee(Employee):
         if value >= 0:
             self._hours_worked_per_month = value
         else:
-            raise ValueError("Hourly rate cannot be negative.")
+            raise ValueError("Hours worked cannot be negative.")
 
     def calculate_salary(self) -> float:
         return self.hourly_rate * self.hours_worked_per_month
 
     def display_details(self) -> str:
-        base = super().display_details()
-        return f"{base} , Hourly Rate: {self.hourly_rate} , Hours Worked per month: {self.hours_worked_per_month}"
+        return super().display_details() + f", Hourly Rate: ₹{self.hourly_rate}, Hours/Month: {self.hours_worked_per_month}"
 
     def to_dict(self) -> dict:
         base = super().to_dict()
@@ -108,8 +107,8 @@ class PartTimeEmployee(Employee):
         return base
 
 class Manager(FullTimeEmployee):
-    def __init__(self,employee_id:str , name: str,department: str ,monthly_salary: float,bonus : float):
-        super().__init__(employee_id,name,department,monthly_salary)
+    def __init__(self, employee_id: str, name: str, department: str, monthly_salary: float, bonus: float):
+        super().__init__(employee_id, name, department, monthly_salary)
         self.bonus = bonus
 
     @property
@@ -127,136 +126,128 @@ class Manager(FullTimeEmployee):
         return super().calculate_salary() + self.bonus
 
     def display_details(self) -> str:
-        base = super().display_details()
-        return f"{base} , Bonus: {self.bonus}"
+        return super().display_details() + f", Bonus: ₹{self.bonus}"
 
     def to_dict(self) -> dict:
         base = super().to_dict()
-        base.update({
-            "Bonus": self.bonus,
-            "Type": "Manager"
-        })
+        base.update({"Bonus": self.bonus, "Type": "Manager"})
         return base
 
+# ================= Company Logic =================
+
 class Company:
-    def __init__(self,company_name,data_file:str = 'employees.json'):
-        self._company_name = company_name
+    def __init__(self, name, data_file='employees.json'):
+        self.name = name
         self._employees = {}
         self._data_file = data_file
         self._load_data()
 
     def _load_data(self):
         try:
-            with open(self._data_file,'r') as file:
+            with open(self._data_file, 'r') as file:
                 data = json.load(file)
-                company_data = data.get(self._company_name , {})
-                for emp_id , emp_dict in company_data.items():
-                    emp_type = emp_dict['Type']
-                    if emp_type == "Full Time":
-                        emp = FullTimeEmployee(
-                            emp_dict['Employee_id'],
-                            emp_dict['Name'],
-                            emp_dict['Department'],
-                            emp_dict['Monthly_salary']
-                        )
-                    elif emp_type == "Part Time":
-                        emp = PartTimeEmployee(
-                            emp_dict['Employee_id'],
-                            emp_dict['Name'],
-                            emp_dict['Department'],
-                            emp_dict['Hourly_rate'],
-                            emp_dict['Hours_worked_per_month']
-                        )
-                    elif emp_type == "Manager":
-                        emp = Manager(
-                            emp_dict['Employee_id'],
-                            emp_dict['Name'],
-                            emp_dict['Department'],
-                            emp_dict['Monthly_salary'],
-                            emp_dict['Bonus']
-                            )
-                    else:
-                        continue
-                    self._employees[emp.employee_id] = emp
-
+                if not isinstance(data, dict):
+                    print("Invalid data format.⚠️Resetting employee data.")
+                    return
+                company_data = data.get(self.name, {})
+                for emp_id, emp_dict in company_data.items():
+                    emp_type = emp_dict.get("Type")
+                    emp_map = {
+                        "Full Time": lambda d: FullTimeEmployee(d['Employee_id'], d['Name'], d['Department'], d['Monthly_salary']),
+                        "Part Time": lambda d: PartTimeEmployee(d['Employee_id'], d['Name'], d['Department'], d['Hourly_rate'], d['Hours_worked_per_month']),
+                        "Manager": lambda d: Manager(d['Employee_id'], d['Name'], d['Department'], d['Monthly_salary'], d['Bonus'])
+                    }
+                    if emp_type in emp_map:
+                        self._employees[emp_id] = emp_map[emp_type](emp_dict)
         except FileNotFoundError:
             self._employees = {}
 
     def _save_data(self):
         try:
-            with open(self._data_file,'r') as file:
+            with open(self._data_file, 'r') as file:
                 data = json.load(file)
+                if not isinstance(data, dict):
+                    data = {}
         except FileNotFoundError:
             data = {}
+        data[self.name] = {emp_id: emp.to_dict() for emp_id, emp in self._employees.items()}
+        with open(self._data_file, 'w') as file:
+            json.dump(data, file, indent=4)
 
-        data[self._company_name] = {
-            emp_id: emp.to_dict() for emp_id, emp in self._employees.items()
-        }
-        with open (self._data_file,'w') as file:
-            json.dump(data, file,indent = 4)
-
-    def add_employee(self,employee: Employee) -> bool:
-        if employee.employee_id  in self._employees:
+    def add_employee(self, employee: Employee) -> bool:
+        if employee.employee_id in self._employees:
             return False
         self._employees[employee.employee_id] = employee
         self._save_data()
         return True
 
-    def remove_employee(self,employee_id: str) -> bool:
+    def remove_employee(self, employee_id: str) -> bool:
         if employee_id in self._employees:
             del self._employees[employee_id]
             self._save_data()
             return True
         return False
 
-    def find_employee(self,employee_id: str):
+    def find_employee(self, employee_id: str):
         return self._employees.get(employee_id)
 
     def calculate_total_payroll(self) -> float:
         return sum(emp.calculate_salary() for emp in self._employees.values())
 
     def display_all_employees(self):
+        if not self._employees:
+            print("No employees to display.")
         for emp in self._employees.values():
             print(emp.display_details())
 
-    def get_employees(self):
-        return self._employees
-
     def generate_payroll_report(self):
-        print("Payroll Report:")
-        print("ID\t\t\tName\t\t\tType\t\t\t\tSalary")
+        print("\nPayroll Report:")
+        print(f"{'ID':<10}{'Name':<25}{'Type':<22}{'Salary':>5}")
         for employee in self._employees.values():
             emp_type = type(employee).__name__
             salary = employee.calculate_salary()
-            print(f"{employee.employee_id}\t\t{employee.name}\t{emp_type}\tRs.{salary}")
-        print(f"\nTotal Payroll: Rs{self.calculate_total_payroll()}")
+            salary_str = f"₹{salary:,.2f}"
+            print(f"{employee.employee_id:<10}{employee.name:<20}{emp_type:<20}{salary_str:>15}")
+        print(f"\nTotal Payroll: ₹{self.calculate_total_payroll():,.2f}")
 
-def welcome_banner():
+def initial_banner():
     print("=" * 60)
     print("\tWelcome to Employee Management System")
     print("=" * 60)
 
+def welcome_banner(company_name, existing=True):
+    if existing:
+        print(f"\nWelcome back to {company_name}'s Employee Management System")
+    else:
+        print(f"\nCompany '{company_name}' registered successfully!🎉")
+
+def company_exists(company_name, filename="employees.json"):
+    if not os.path.exists(filename):
+        return False
+    with open(filename, "r") as file:
+        try:
+            data = json.load(file)
+            return isinstance(data, dict) and company_name in data
+        except json.JSONDecodeError:
+            return False
+
 def greet_by_time():
     hour = datetime.now().hour
     if hour < 12:
-        print("Good Morning, User!🙏")
+        print("Good Morning, User! 🙏")
     elif hour < 17:
-        print("Good Afternoon, User!🙏")
+        print("Good Afternoon, User! 🙏")
     else:
-        print("Good Evening, User!🙏")
-
+        print("Good Evening, User! 🙏")
 
 def main():
-    global company_name
-    welcome_banner()
-
-    company_name = input("Enter Company Name: ").strip().title()
-    print(f"\n🏢 Company {company_name} registered successfully 🎉")
-
+    initial_banner()
+    company_name = input("\n🏢 Enter Company Name: ").strip().title()
+    exists = company_exists(company_name)
+    welcome_banner(company_name, existing=exists)
     greet_by_time()
+
     company = Company(company_name)
-
-
 
     while True:
         print("\n--- Employee Management System ---")
@@ -268,57 +259,64 @@ def main():
         print("6. Generate Payroll Report")
         print("7. Exit")
 
-        choice = input("Enter your choice (1-7): ")
+        choice = input("Enter your choice (1-7): ").strip()
 
+        emp = None
         if choice == "1":
-            print("\n1. Full-Time\n2. Part-Time\n3. Manager")
-            emp_type = input("Choose employee type: ")
+            while True:
+                print("\n1. Full-Time\n2. Part-Time\n3. Manager")
+                emp_type = input("Choose employee type: ").strip()
 
-            emp_id = input("Enter ID: ")
-            name = input("Enter Name: ")
-            dept = input("Enter Department: ")
+                if emp_type in ["1", "2", "3"]:
+                    break
+                else:
+                    print("Invalid employee type.⚠️ \nPlease choose 1, 2, or 3.")
 
-            if emp_type == "1":
-                salary = float(input("Enter Monthly Salary: "))
-                emp = FullTimeEmployee(emp_id, name, dept, salary)
-            elif emp_type == "2":
-                rate = float(input("Enter Hourly Rate: "))
-                hours = float(input("Enter Hours Worked: "))
-                emp = PartTimeEmployee(emp_id, name, dept, rate, hours)
-            elif emp_type == "3":
-                salary = float(input("Enter Monthly Salary: "))
-                bonus = float(input("Enter Bonus: "))
-                emp = Manager(emp_id, name, dept, salary, bonus)
-            else:
-                print("Invalid employee type.")
-                continue
+            try:
+                emp_id = input("Enter ID: ").strip()
+                company_name = input("Enter Name: ").strip()
+                dept = input("Enter Department: ").strip()
 
-            if company.add_employee(emp):
-                print("Employee added successfully.")
-            else:
-                print("Employee ID already exists.")
+                if emp_type == "1":
+                    salary = float(input("Enter Monthly Salary: "))
+                    emp = FullTimeEmployee(emp_id, company_name, dept, salary)
+                elif emp_type == "2":
+                    rate = float(input("Enter Hourly Rate: "))
+                    hours = float(input("Enter Hours Worked: "))
+                    emp = PartTimeEmployee(emp_id, company_name, dept, rate, hours)
+                elif emp_type == "3":
+                    salary = float(input("Enter Monthly Salary: "))
+                    bonus = float(input("Enter Bonus: "))
+                    emp = Manager(emp_id, company_name, dept, salary, bonus)
+
+                if company.add_employee(emp):
+                    print("Employee added successfully.✅")
+                else:
+                    print("Employee ID already exists.⚠️")
+
+            except ValueError:
+                print("Invalid numeric input. Try again.❌")
 
         elif choice == "2":
-            emp_id = input("Enter employee ID to remove: ")
+            emp_id = input("Enter employee ID to remove: ").strip()
             if company.remove_employee(emp_id):
-                print("Employee removed.")
+                print("Employee removed.✅")
             else:
-                print("Employee not found.")
+                print("Employee not found.❌")
 
         elif choice == "3":
             company.display_all_employees()
 
         elif choice == "4":
-            total = company.calculate_total_payroll()
-            print(f"Total Payroll: ₹{total}")
+            print(f"Total Payroll: ₹{company.calculate_total_payroll():,.2f}")
 
         elif choice == "5":
-            emp_id = input("Enter employee ID to search: ")
+            emp_id = input("Enter employee ID to search: ").strip()
             emp = company.find_employee(emp_id)
             if emp:
                 print("Employee Found:\n", emp.display_details())
             else:
-                print("Employee not found.")
+                print("Employee not found.❌")
 
         elif choice == "6":
             company.generate_payroll_report()
@@ -331,10 +329,8 @@ def main():
             print("🖥️  Exiting system... Goodbye!\n")
             break
 
-
         else:
-            print("Invalid choice. Try again.")
+            print("Invalid choice. Try again.❌")
 
 if __name__ == "__main__":
     main()
-
